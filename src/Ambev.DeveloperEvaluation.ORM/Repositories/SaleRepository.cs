@@ -67,11 +67,44 @@ public class SaleRepository : ISaleRepository
     }
 
     /// <summary>
-    /// Persists changes made to an existing sale.
+    /// Persists changes made to an existing sale. The sale is expected to already be
+    /// tracked by this context (retrieved via GetByIdAsync earlier in the same scope).
+    ///
+    /// SaleItem's Id is client-generated (assigned in its constructor), so when a new
+    /// item reaches the change tracker only through navigation fixup -- e.g. after
+    /// Sale.ClearItems()+AddItem() -- EF Core cannot tell it apart from a pre-existing
+    /// one and defaults its state to Modified instead of Added, which would issue an
+    /// UPDATE for a row that was never inserted. We resolve the ambiguity by checking
+    /// which of the currently Modified items actually exist in the database: those that
+    /// don't are new and get flipped to Added; genuinely modified existing items (e.g.
+    /// an item cancelled in place) are left as Modified.
     /// </summary>
     public async Task<Sale> UpdateAsync(Sale sale, CancellationToken cancellationToken = default)
     {
-        _context.Sales.Update(sale);
+        _context.ChangeTracker.DetectChanges();
+
+        var modifiedItems = _context.ChangeTracker.Entries<SaleItem>()
+            .Where(entry => entry.State == EntityState.Modified)
+            .ToList();
+
+        if (modifiedItems.Count > 0)
+        {
+            var modifiedItemIds = modifiedItems.Select(entry => entry.Entity.Id).ToList();
+            var existingItemIds = await _context.Set<SaleItem>()
+                .AsNoTracking()
+                .Where(item => modifiedItemIds.Contains(item.Id))
+                .Select(item => item.Id)
+                .ToListAsync(cancellationToken);
+
+            var existingItemIdSet = existingItemIds.ToHashSet();
+
+            foreach (var entry in modifiedItems)
+            {
+                if (!existingItemIdSet.Contains(entry.Entity.Id))
+                    entry.State = EntityState.Added;
+            }
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
         return sale;
     }
