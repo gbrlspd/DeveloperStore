@@ -13,7 +13,10 @@ namespace Ambev.DeveloperEvaluation.Domain.Entities;
 /// </summary>
 public class Sale : BaseEntity
 {
-    private readonly List<SaleItem> _items = [];
+    // Not readonly: EF Core's change tracker needs to replace this field's value with its
+    // own tracking-aware collection at materialization time to correctly detect added/removed
+    // items (a readonly field can't be reassigned outside the constructor, which breaks that).
+    private List<SaleItem> _items = [];
 
     /// <summary>
     /// Gets the human-readable, unique sale number.
