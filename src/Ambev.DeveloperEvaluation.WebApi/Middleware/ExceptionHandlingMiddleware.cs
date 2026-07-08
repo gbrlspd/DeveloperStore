@@ -1,15 +1,20 @@
-﻿using Ambev.DeveloperEvaluation.Common.Validation;
+using Ambev.DeveloperEvaluation.Common.Validation;
 using Ambev.DeveloperEvaluation.WebApi.Common;
 using FluentValidation;
 using System.Text.Json;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Middleware
 {
-    public class ValidationExceptionMiddleware
+    /// <summary>
+    /// Translates exceptions raised by the Application/Domain layers into the
+    /// standard ApiResponse envelope, so every error looks the same regardless
+    /// of where it was thrown from.
+    /// </summary>
+    public class ExceptionHandlingMiddleware
     {
         private readonly RequestDelegate _next;
 
-        public ValidationExceptionMiddleware(RequestDelegate next)
+        public ExceptionHandlingMiddleware(RequestDelegate next)
         {
             _next = next;
         }
@@ -22,21 +27,33 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
             }
             catch (ValidationException ex)
             {
-                await HandleValidationExceptionAsync(context, ex);
+                await WriteResponseAsync(context, StatusCodes.Status400BadRequest, "Validation Failed",
+                    ex.Errors.Select(error => (ValidationErrorDetail)error));
+            }
+            catch (DomainException ex)
+            {
+                await WriteResponseAsync(context, StatusCodes.Status400BadRequest, ex.Message, []);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                await WriteResponseAsync(context, StatusCodes.Status404NotFound, ex.Message, []);
             }
         }
 
-        private static Task HandleValidationExceptionAsync(HttpContext context, ValidationException exception)
+        private static Task WriteResponseAsync(
+            HttpContext context,
+            int statusCode,
+            string message,
+            IEnumerable<ValidationErrorDetail> errors)
         {
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.StatusCode = statusCode;
 
             var response = new ApiResponse
             {
                 Success = false,
-                Message = "Validation Failed",
-                Errors = exception.Errors
-                    .Select(error => (ValidationErrorDetail)error)
+                Message = message,
+                Errors = errors
             };
 
             var jsonOptions = new JsonSerializerOptions
