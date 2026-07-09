@@ -1,0 +1,21 @@
+namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales;
+
+/// <summary>
+/// API response model representing a full sale, returned by
+/// CreateSale, GetSale, GetSales and UpdateSale.
+/// </summary>
+public class SaleResponse
+{
+    public Guid Id { get; set; }
+    public string SaleNumber { get; set; } = string.Empty;
+    public DateTime SaleDate { get; set; }
+    public Guid CustomerId { get; set; }
+    public string CustomerName { get; set; } = string.Empty;
+    public Guid BranchId { get; set; }
+    public string BranchName { get; set; } = string.Empty;
+    public IReadOnlyCollection<SaleItemResponse> Items { get; set; } = [];
+    public decimal TotalAmount { get; set; }
+    public bool IsCancelled { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}

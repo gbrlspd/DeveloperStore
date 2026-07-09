@@ -3,11 +3,13 @@ using Ambev.DeveloperEvaluation.Common.HealthChecks;
 using Ambev.DeveloperEvaluation.Common.Logging;
 using Ambev.DeveloperEvaluation.Common.Security;
 using Ambev.DeveloperEvaluation.Common.Validation;
+using Ambev.DeveloperEvaluation.Domain.Events;
 using Ambev.DeveloperEvaluation.IoC;
 using Ambev.DeveloperEvaluation.ORM;
 using Ambev.DeveloperEvaluation.WebApi.Middleware;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Rebus.Bus;
 using Serilog;
 
 namespace Ambev.DeveloperEvaluation.WebApi;
@@ -53,7 +55,15 @@ public class Program
             builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             var app = builder.Build();
-            app.UseMiddleware<ValidationExceptionMiddleware>();
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+            // Rebus (in-memory transport) requires explicit subscriptions before any
+            // event is published, even though publisher and handlers live in this same process.
+            var bus = app.Services.GetRequiredService<IBus>();
+            bus.Subscribe<SaleCreatedEvent>().GetAwaiter().GetResult();
+            bus.Subscribe<SaleModifiedEvent>().GetAwaiter().GetResult();
+            bus.Subscribe<SaleCancelledEvent>().GetAwaiter().GetResult();
+            bus.Subscribe<ItemCancelledEvent>().GetAwaiter().GetResult();
 
             if (app.Environment.IsDevelopment())
             {
