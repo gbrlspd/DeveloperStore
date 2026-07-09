@@ -1,0 +1,104 @@
+{
+  "info": {
+    "name": "DeveloperStore - Sales API",
+    "description": "CRUD and cancellation endpoints for the Sales API. Set the `baseUrl` variable (defaults to http://localhost:5100). Create Sale automatically captures `saleId`/`itemId` into collection variables for the requests below it.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5100" },
+    { "key": "saleId", "value": "" },
+    { "key": "itemId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Create Sale",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "if (body.data) {",
+              "    pm.collectionVariables.set('saleId', body.data.id);",
+              "    if (body.data.items && body.data.items.length > 0) {",
+              "        pm.collectionVariables.set('itemId', body.data.items[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"saleNumber\": \"SALE-0001\",\n  \"saleDate\": \"2026-07-08T00:00:00Z\",\n  \"customerId\": \"11111111-1111-1111-1111-111111111111\",\n  \"customerName\": \"John Doe\",\n  \"branchId\": \"22222222-2222-2222-2222-222222222222\",\n  \"branchName\": \"Downtown Branch\",\n  \"items\": [\n    {\n      \"productId\": \"33333333-3333-3333-3333-333333333333\",\n      \"productName\": \"Skol 350ml\",\n      \"quantity\": 10,\n      \"unitPrice\": 5.00\n    }\n  ]\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/sales", "host": [ "{{baseUrl}}" ], "path": [ "api", "sales" ] }
+      }
+    },
+    {
+      "name": "Get Sale by Id",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/sales/{{saleId}}", "host": [ "{{baseUrl}}" ], "path": [ "api", "sales", "{{saleId}}" ] }
+      }
+    },
+    {
+      "name": "List Sales (paged, filtered, ordered)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/sales?_page=1&_size=10&_order=saleDate desc&branchName=Downtown*",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "sales" ],
+          "query": [
+            { "key": "_page", "value": "1" },
+            { "key": "_size", "value": "10" },
+            { "key": "_order", "value": "saleDate desc" },
+            { "key": "branchName", "value": "Downtown*" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Sale",
+      "request": {
+        "method": "PUT",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"saleDate\": \"2026-07-09T00:00:00Z\",\n  \"customerId\": \"11111111-1111-1111-1111-111111111111\",\n  \"customerName\": \"John Doe Updated\",\n  \"branchId\": \"22222222-2222-2222-2222-222222222222\",\n  \"branchName\": \"Downtown Branch\",\n  \"items\": [\n    {\n      \"productId\": \"33333333-3333-3333-3333-333333333333\",\n      \"productName\": \"Skol 350ml\",\n      \"quantity\": 12,\n      \"unitPrice\": 5.00\n    }\n  ]\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/sales/{{saleId}}", "host": [ "{{baseUrl}}" ], "path": [ "api", "sales", "{{saleId}}" ] }
+      }
+    },
+    {
+      "name": "Cancel Item",
+      "request": {
+        "method": "PATCH",
+        "url": {
+          "raw": "{{baseUrl}}/api/sales/{{saleId}}/items/{{itemId}}/cancel",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "sales", "{{saleId}}", "items", "{{itemId}}", "cancel" ]
+        }
+      }
+    },
+    {
+      "name": "Cancel Sale",
+      "request": {
+        "method": "PATCH",
+        "url": { "raw": "{{baseUrl}}/api/sales/{{saleId}}/cancel", "host": [ "{{baseUrl}}" ], "path": [ "api", "sales", "{{saleId}}", "cancel" ] }
+      }
+    },
+    {
+      "name": "Delete Sale",
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "{{baseUrl}}/api/sales/{{saleId}}", "host": [ "{{baseUrl}}" ], "path": [ "api", "sales", "{{saleId}}" ] }
+      }
+    }
+  ]
+}
