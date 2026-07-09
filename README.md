@@ -1,5 +1,7 @@
 # Developer Evaluation Project
 
+[![CI](https://github.com/gbrlspd/DeveloperStore/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gbrlspd/DeveloperStore/actions/workflows/ci.yml)
+
 `READ CAREFULLY`
 
 ## Use Case
