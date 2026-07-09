@@ -92,6 +92,16 @@ Lightweight ADR-style log of the decisions made while implementing the Sales API
 
 **Why:** [General API](./general-api.md) sketches a different `{ type, error, detail }` error shape, but that shape was never actually implemented anywhere in this codebase. Matching the format that's real and already in use beats matching a doc that was never wired up, and keeps every endpoint in this API consistent with every other one.
 
+---
+
+### 12. Keep AutoMapper 13.0.1 despite the known NU1903 advisory
+
+**Decision:** stay on AutoMapper 13.0.1 (as shipped by the template) rather than upgrading to silence the `GHSA-rvv3-g6hj-g44x` NuGet advisory.
+
+**Why:** the advisory is a real, high-severity DoS: mapping a self-referencing object graph 25,000+ levels deep exhausts the stack and crashes the process. But every mapping in this API is a flat DTO (`Sale → SaleResult`, `Request → Command`, ...) — there's no recursive/self-referencing type anywhere in the graph, and ASP.NET Core's `System.Text.Json` already rejects a request body nested past its default `MaxDepth` (64) before it ever reaches AutoMapper. The exploit's precondition isn't reachable through this API's actual attack surface.
+
+The fix requires AutoMapper ≥ 15.1.1 (there is no patched 13.x release), which is a 2-major-version jump, and — checked directly against the NuGet package metadata — AutoMapper moved off the permissive MIT license (13.0.1) to a custom, non-OSI license requiring explicit acceptance starting with these later versions. Adopting a different license is a decision with real consequences beyond this codebase; it isn't something to change as a drive-by side effect of clearing a build warning, and was confirmed explicitly rather than assumed.
+
 <br>
 <div style="display: flex; justify-content: space-between;">
   <a href="./sales-api.md">Previous: Sales API</a>
